@@ -3,10 +3,11 @@ namespace ServiceControl.Migrate4to5.DumpFormat;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 public sealed class JsonlWriter(DumpPaths paths, string collectionName) : IDisposable
 {
-    readonly StreamWriter writer = new(paths.CollectionFile(collectionName));
+    readonly StreamWriter writer = new(paths.CollectionFile(collectionName), false, new UTF8Encoding(false));
 
     public long Count { get; private set; }
 

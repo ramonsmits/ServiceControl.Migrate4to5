@@ -11,9 +11,11 @@ public class DumpLine
     public required JObject Document { get; init; }
     public Dictionary<string, BodyRef> Bodies { get; init; } = [];
 
-    public string ToJson() => JsonConvert.SerializeObject(this, Formatting.None);
+    static readonly JsonSerializerSettings settings = new() { DateParseHandling = DateParseHandling.None };
+
+    public string ToJson() => JsonConvert.SerializeObject(this, Formatting.None, settings);
 
     public static DumpLine FromJson(string json) =>
-        JsonConvert.DeserializeObject<DumpLine>(json)
+        JsonConvert.DeserializeObject<DumpLine>(json, settings)
         ?? throw new InvalidDumpException("Empty JSONL line");
 }

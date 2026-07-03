@@ -57,4 +57,19 @@ public class DumpLineTests
     [Test]
     public void Reading_missing_collection_yields_empty() =>
         Assert.That(Jsonl.Read(new DumpPaths(root), "Nope"), Is.Empty);
+
+    [Test]
+    public void Round_trip_preserves_date_strings_verbatim()
+    {
+        var line = new DumpLine
+        {
+            Id = "x",
+            Metadata = JObject.Parse("""{"Raven-Last-Modified":"2026-06-20T10:00:00.1234567Z"}"""),
+            Document = JObject.Parse("""{"AttemptedAt":"2026-06-19T09:00:00.7654321+02:00"}"""),
+        };
+        var parsed = DumpLine.FromJson(line.ToJson());
+        Assert.That(parsed.Metadata["Raven-Last-Modified"]!.Type, Is.EqualTo(JTokenType.String));
+        Assert.That((string)parsed.Metadata["Raven-Last-Modified"]!, Is.EqualTo("2026-06-20T10:00:00.1234567Z"));
+        Assert.That((string)parsed.Document["AttemptedAt"]!, Is.EqualTo("2026-06-19T09:00:00.7654321+02:00"));
+    }
 }
