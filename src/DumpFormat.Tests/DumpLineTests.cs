@@ -64,12 +64,20 @@ public class DumpLineTests
         var line = new DumpLine
         {
             Id = "x",
-            Metadata = JObject.Parse("""{"Raven-Last-Modified":"2026-06-20T10:00:00.1234567Z"}"""),
-            Document = JObject.Parse("""{"AttemptedAt":"2026-06-19T09:00:00.7654321+02:00"}"""),
+            Metadata = DumpJson.Parse("""{"Raven-Last-Modified":"2026-06-20T10:00:00.1234567Z"}"""),
+            Document = DumpJson.Parse("""{"AttemptedAt":"2026-06-19T09:00:00.7654321+02:00"}"""),
         };
         var parsed = DumpLine.FromJson(line.ToJson());
         Assert.That(parsed.Metadata["Raven-Last-Modified"]!.Type, Is.EqualTo(JTokenType.String));
         Assert.That((string)parsed.Metadata["Raven-Last-Modified"]!, Is.EqualTo("2026-06-20T10:00:00.1234567Z"));
         Assert.That((string)parsed.Document["AttemptedAt"]!, Is.EqualTo("2026-06-19T09:00:00.7654321+02:00"));
+    }
+
+    [Test]
+    public void DumpJson_parse_leaves_date_strings_as_strings()
+    {
+        var doc = DumpJson.Parse("""{"When":"2026-06-19T09:00:00.7654321+02:00"}""");
+        Assert.That(doc["When"]!.Type, Is.EqualTo(JTokenType.String));
+        Assert.That((string)doc["When"]!, Is.EqualTo("2026-06-19T09:00:00.7654321+02:00"));
     }
 }
