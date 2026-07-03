@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="DumpFormat.Tests/DumpFormat.Tests.csproj" />
-  <Project Path="DumpFormat/DumpFormat.csproj" />
-  <Project Path="Exporter.Tests/Exporter.Tests.csproj" />
-  <Project Path="Exporter/Exporter.csproj" />
-  <Project Path="Importer.Tests/Importer.Tests.csproj" />
-  <Project Path="Importer/Importer.csproj" />
-</Solution>
