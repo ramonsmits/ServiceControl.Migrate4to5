@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>sc-migrate-export</AssemblyName>
+    <RootNamespace>ServiceControl.Migrate4to5.Exporter</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RavenDB.Database" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+    <ProjectReference Include="..\DumpFormat\DumpFormat.csproj" />
+  </ItemGroup>
+</Project>

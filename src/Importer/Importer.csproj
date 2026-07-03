@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>sc-migrate</AssemblyName>
+    <RootNamespace>ServiceControl.Migrate4to5.Importer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="RavenDB.Client" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <ProjectReference Include="..\DumpFormat\DumpFormat.csproj" />
+  </ItemGroup>
+</Project>
