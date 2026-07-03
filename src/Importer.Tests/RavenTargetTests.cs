@@ -6,6 +6,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using ServiceControl.Migrate4to5.DumpFormat;
+using ServiceControl.Migrate4to5.Importer;
 
 [TestFixture]
 public class RavenTargetTests
@@ -70,7 +71,7 @@ public class RavenTargetTests
         doc.Metadata["@expires"] = new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         target.ImportBatch([doc], bodies);
 
-        Assert.That((DateTime)target.LoadRaw("FailedMessages/3")!["@metadata"]!["@expires"]!,
+        Assert.That(DocumentTransformer.ParseUtc((string)target.LoadRaw("FailedMessages/3")!["@metadata"]!["@expires"]!),
             Is.EqualTo(new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
     }
 

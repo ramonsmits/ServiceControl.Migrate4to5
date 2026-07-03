@@ -114,13 +114,7 @@ public sealed class RavenTarget : IDisposable
         var cmd = new Raven.Client.Documents.Commands.GetDocumentsCommand(docId, includes: null, metadataOnly: false);
         session.Advanced.RequestExecutor.Execute(cmd, session.Advanced.Context);
         var doc = cmd.Result?.Results?.FirstOrDefault() as Sparrow.Json.BlittableJsonReaderObject;
-        // Deliberately JObject.Parse (not DumpJson.Parse) here: DumpJson.Parse's DateParseHandling.None keeps
-        // ISO date strings as plain strings, and Newtonsoft's later explicit-cast-to-DateTime on such a string
-        // reparses it with local-time semantics, shifting UTC values by the host's offset. Standard JObject.Parse
-        // recognizes the ISO "Z" suffix while parsing and yields a proper Kind=Utc DateTime up front. DumpJson.Parse
-        // is for preserving *dump-file* date text verbatim; this method reads back what the target DB actually
-        // stored, so normal parsing is correct here.
-        return doc is null ? null : JObject.Parse(doc.ToString());
+        return doc is null ? null : DumpJson.Parse(doc.ToString());
     }
 
     public void Dispose() => store.Dispose();

@@ -44,6 +44,6 @@ public static class DocumentTransformer
     /// must never be used for these — it converts via the host timezone (Kind=Local),
     /// which misorders instants across DST transitions.
     /// </summary>
-    internal static DateTime ParseUtc(string value) =>
+    public static DateTime ParseUtc(string value) =>
         DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).UtcDateTime;
 }
