@@ -1,6 +1,7 @@
 namespace ServiceControl.Migrate4to5.Importer;
 
 using System;
+using System.Globalization;
 using Newtonsoft.Json.Linq;
 using ServiceControl.Migrate4to5.DumpFormat;
 
@@ -28,8 +29,12 @@ public static class DocumentTransformer
         ["Raven-Clr-Type"] = ClrTypeMap.For(collectionName),
     };
 
-    internal static DateTime LastModified(DumpLine line) =>
-        line.Metadata.Value<DateTime?>("Raven-Last-Modified")
-        ?? line.Metadata.Value<DateTime?>("Last-Modified")
-        ?? DateTime.UtcNow;
+    internal static DateTime LastModified(DumpLine line, DateTime utcNow)
+    {
+        var raw = line.Metadata.Value<string>("Raven-Last-Modified")
+                  ?? line.Metadata.Value<string>("Last-Modified");
+        return raw is null
+            ? utcNow
+            : DateTime.Parse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+    }
 }
