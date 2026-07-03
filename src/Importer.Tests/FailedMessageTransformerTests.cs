@@ -112,4 +112,18 @@ public class FailedMessageTransformerTests
         Assert.That(expires.Kind, Is.EqualTo(DateTimeKind.Utc));
         Assert.That(expires, Is.EqualTo(new DateTime(2026, 7, 20, 10, 0, 0, DateTimeKind.Utc)));
     }
+
+    [Test]
+    public void Attempt_ordering_is_dst_safe()
+    {
+        // Two attempts 15 minutes apart in real time, straddling the 2026-10-25
+        // Europe/Amsterdam DST fallback (01:00Z): naive local conversion misorders them.
+        var line = FailedMessageFixture.Line();
+        var attempts = (JArray)line.Document["ProcessingAttempts"]!;
+        attempts[0]["AttemptedAt"] = "2026-10-25T00:50:00.0000000Z"; // earlier instant
+        attempts[1]["AttemptedAt"] = "2026-10-25T01:05:00.0000000Z"; // later instant — must win
+        line.Bodies["msg-2"] = new BodyRef { Sha256 = new string('b', 64), ContentType = "text/xml", ContentLength = BodyBytes.Length };
+        var t = FailedMessageTransformer.Transform(line, TimeSpan.FromDays(365), Now, _ => BodyBytes);
+        Assert.That(t.Body, Is.Not.Null, "the later attempt (msg-2) must be selected");
+    }
 }

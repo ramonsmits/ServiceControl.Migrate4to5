@@ -52,8 +52,13 @@ public static class FailedMessageTransformer
             }
         }
 
-        // 4. Most recent attempt's body becomes the 5.x "body" attachment
-        var latest = attempts.OfType<JObject>().OrderBy(a => a.Value<DateTime>("AttemptedAt")).LastOrDefault();
+        // 4. Most recent attempt's body becomes the 5.x "body" attachment.
+        // Must use DocumentTransformer.ParseUtc, not JObject.Value<DateTime>() — the latter
+        // converts via the host timezone (Kind=Local), which misorders instants across DST
+        // transitions and can silently select the wrong attempt's body.
+        var latest = attempts.OfType<JObject>()
+            .OrderBy(a => a.Value<string>("AttemptedAt") is { } s ? DocumentTransformer.ParseUtc(s) : DateTime.MinValue)
+            .LastOrDefault();
         if (latest is null)
         {
             return result;

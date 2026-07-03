@@ -35,6 +35,15 @@ public static class DocumentTransformer
                   ?? line.Metadata.Value<string>("Last-Modified");
         return raw is null
             ? utcNow
-            : DateTime.Parse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            : ParseUtc(raw);
     }
+
+    /// <summary>
+    /// All date strings in dumps are parsed to genuine UTC ticks: explicit offsets
+    /// are honored, offset-less values are treated as UTC. JToken.Value&lt;DateTime&gt;()
+    /// must never be used for these — it converts via the host timezone (Kind=Local),
+    /// which misorders instants across DST transitions.
+    /// </summary>
+    internal static DateTime ParseUtc(string value) =>
+        DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).UtcDateTime;
 }
