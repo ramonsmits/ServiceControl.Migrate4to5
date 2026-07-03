@@ -11,4 +11,7 @@
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
     <ProjectReference Include="..\DumpFormat\DumpFormat.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Exporter.Tests" />
+  </ItemGroup>
 </Project>
