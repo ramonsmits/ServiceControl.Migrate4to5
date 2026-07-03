@@ -1,8 +1,6 @@
 namespace ServiceControl.Migrate4to5.Importer.Tests;
 
-using System;
 using System.IO;
-using System.Text;
 using NUnit.Framework;
 using ServiceControl.Migrate4to5.DumpFormat;
 using ServiceControl.Migrate4to5.Importer.Tests.Fixtures;
@@ -14,34 +12,7 @@ public class ImportCommandTests
     string database = null!;
 
     [SetUp]
-    public void SetUp()
-    {
-        dumpRoot = Directory.CreateTempSubdirectory("importcmd").FullName;
-        database = RavenTestServer.NewDatabase();
-
-        var paths = new DumpPaths(dumpRoot);
-        var bodies = new BodyStore(paths);
-        var bodyRef = bodies.Store(Encoding.UTF8.GetBytes("<Order>embedded body</Order>"), "text/xml");
-
-        var failed = FailedMessageFixture.Line(status: 1);
-        failed.Bodies["msg-2"] = bodyRef;
-        using (var w = new JsonlWriter(paths, "FailedMessages")) { w.Write(failed); }
-        using (var w = new JsonlWriter(paths, "CustomChecks"))
-        {
-            w.Write(new DumpLine
-            {
-                Id = "CustomChecks/11111111-1111-1111-1111-111111111111",
-                Metadata = DumpJson.Parse("""{"Raven-Entity-Name":"CustomChecks"}"""),
-                Document = DumpJson.Parse("""{"CustomCheckId":"MyCheck","Status":0}"""),
-            });
-        }
-
-        var manifest = new Manifest { ToolVersion = "test", SourceDbPath = "x", ExportedAtUtc = DateTime.UtcNow };
-        manifest.Collections.Add(new CollectionStats { Name = "FailedMessages", ExportedCount = 1 });
-        manifest.Collections.Add(new CollectionStats { Name = "CustomChecks", ExportedCount = 1 });
-        manifest.BodyCount = 1;
-        manifest.Save(paths);
-    }
+    public void SetUp() => (dumpRoot, database) = DumpBuilder.BuildAndImport();
 
     [TearDown] public void TearDown() => Directory.Delete(dumpRoot, recursive: true);
 
