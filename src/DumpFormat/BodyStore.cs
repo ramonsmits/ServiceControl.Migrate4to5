@@ -25,9 +25,23 @@ public class BodyStore(DumpPaths paths)
         if (!File.Exists(path))
         {
             // Write via temp + move so a crash never leaves a truncated body under its final name
-            var tmp = path + ".tmp";
+            var tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             File.WriteAllBytes(tmp, content);
-            File.Move(tmp, path);
+            try
+            {
+                File.Move(tmp, path);
+            }
+            catch (IOException)
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(tmp);
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
 
         return new BodyRef { Sha256 = sha, ContentType = contentType, ContentLength = content.Length };
