@@ -12,7 +12,7 @@ public class ImportCommandTests
     string database = null!;
 
     [SetUp]
-    public void SetUp() => (dumpRoot, database) = DumpBuilder.BuildAndImport();
+    public void SetUp() => (dumpRoot, database) = DumpBuilder.Build();
 
     [TearDown] public void TearDown() => Directory.Delete(dumpRoot, recursive: true);
 
@@ -32,6 +32,7 @@ public class ImportCommandTests
         var exit = Run(out var output);
         Assert.That(exit, Is.Zero);
         Assert.That(output, Does.Contain("FailedMessages").And.Contain("CustomChecks"));
+        Assert.That(output, Does.Contain("imported:       1"));
 
         using var target = new RavenTarget(RavenTestServer.ServerUrl, database, null, null);
         Assert.That(target.LoadRaw($"FailedMessages/{FailedMessageFixture.UniqueId}"), Is.Not.Null);

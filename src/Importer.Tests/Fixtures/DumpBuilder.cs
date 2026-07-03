@@ -7,10 +7,9 @@ using ServiceControl.Migrate4to5.DumpFormat;
 
 public static class DumpBuilder
 {
-    // Builds a small dump (one FailedMessage with an embedded body, one CustomCheck) and
-    // imports it into a fresh database. Shared by ImportCommandTests and VerifyCommandTests
-    // so both fixtures exercise the same known-good starting state.
-    public static (string dumpRoot, string database) BuildAndImport()
+    // Builds a small dump (one FailedMessage with an embedded body, one CustomCheck) into a fresh
+    // database directory and allocates a fresh database, but does NOT run ImportCommand.
+    public static (string dumpRoot, string database) Build()
     {
         var dumpRoot = Directory.CreateTempSubdirectory("importcmd").FullName;
         var database = RavenTestServer.NewDatabase();
@@ -37,6 +36,16 @@ public static class DumpBuilder
         manifest.Collections.Add(new CollectionStats { Name = "CustomChecks", ExportedCount = 1 });
         manifest.BodyCount = 1;
         manifest.Save(paths);
+
+        return (dumpRoot, database);
+    }
+
+    // Builds a small dump (one FailedMessage with an embedded body, one CustomCheck) and
+    // imports it into a fresh database. Shared by ImportCommandTests and VerifyCommandTests
+    // so both fixtures exercise the same known-good starting state.
+    public static (string dumpRoot, string database) BuildAndImport()
+    {
+        var (dumpRoot, database) = Build();
 
         var writer = new StringWriter();
         var exit = ImportCommand.Run(CliArgs.Parse([
