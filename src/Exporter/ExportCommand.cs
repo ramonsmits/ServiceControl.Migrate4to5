@@ -9,9 +9,10 @@ using ServiceControl.Migrate4to5.DumpFormat;
 
 public static class ExportCommand
 {
-    // Full detail and rationale for each of these lives in COLLECTIONS.md.
+    // Must stay in sync with the "Skipped collections" table in COLLECTIONS.md,
+    // which holds the full detail and rationale for each entry.
     const string NotMigratedCollections =
-        "EventLogItems, RetryBatches, FailedMessageRetries, FailedMessageEdit, Archive/Unarchive operations, FailedErrorImports, ProcessedMessages, SagaSnapshots, Subscriptions, ReclassifyErrorSettings";
+        "EventLogItems, RetryBatches, FailedMessageRetries, FailedMessageEdit, Archive/Unarchive operations, FailedErrorImports, FailedAuditImports, ProcessedMessages, SagaSnapshots, Subscriptions, ReclassifyErrorSettings";
 
     public static int Run(CliArgs args, TextWriter output) =>
         Run(args, output, new SourceDatabase(args.Required("db-path")));
