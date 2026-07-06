@@ -48,6 +48,16 @@ public class FailedMessageTransformerTests
     }
 
     [Test]
+    public void RetryIssued_past_retention_is_skipped()
+    {
+        // RetryIssued(3) would otherwise normalize to Unresolved(1) — which never expires — so
+        // the retention check must happen against the *original* status, before normalization.
+        var t = FailedMessageTransformer.Transform(LineWithBody(status: 3), TimeSpan.FromDays(5), Now, _ => BodyBytes);
+        Assert.That(t.Skip, Is.True);
+        Assert.That(t.SkipReason, Does.Contain("retention"));
+    }
+
+    [Test]
     public void Unresolved_never_expires_and_keeps_status()
     {
         var t = Transform(LineWithBody(status: 1));

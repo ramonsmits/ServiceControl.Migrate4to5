@@ -61,7 +61,7 @@ Options:
 | `--in` | yes | Dump directory produced by `export` |
 | `--url` | yes | RavenDB 5 server URL (SC5 maintenance-mode embedded server, default port `33334`, or an external server) |
 | `--database` | no | Target database name (default `primary`) |
-| `--error-retention` | yes | Same `TimeSpan` as export; stamps `@expires` on Resolved/Archived messages as `LastModified + retention` |
+| `--error-retention` | yes | Same `TimeSpan` as export; stamps `@expires` on Resolved/Archived messages as `LastModified + retention`. Resolved/Archived/RetryIssued messages already past this age (evaluated against their original status, before the `RetryIssued → Unresolved` normalization) are dropped instead of imported, matching what 4.x's own retention cleaner would have removed |
 | `--cert` / `--cert-password` | no | Client certificate for a secured RavenDB server |
 | `--batch-size` | no | Documents per bulk-insert batch (default `128`) |
 

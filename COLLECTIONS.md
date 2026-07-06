@@ -21,7 +21,7 @@ erDiagram
 
 | Collection | Backs | Tier | Why |
 |---|---|---|---|
-| `FailedMessages` (+ bodies) | The failed-message list, groups, archive in ServicePulse | **Critical** | The only non-regenerable data; the reason this tool exists. Unresolved and Archived carry over as-is; RetryIssued becomes Unresolved (see below); Resolved/Archived past retention are dropped, matching what 4.x's cleaner would have deleted. |
+| `FailedMessages` (+ bodies) | The failed-message list, groups, archive in ServicePulse | **Critical** | The only non-regenerable data; the reason this tool exists. Unresolved carries over as-is; RetryIssued becomes Unresolved (see below). Resolved/Archived/RetryIssued past retention are dropped (matching the 4.x cleaner). |
 | `GroupComments` | Notes operators attach to failure groups | **Important** | Human-entered; silently lost otherwise. |
 | `RetryOperations/History` | Recoverability → History screen | **Important** | Historical record of past group retries; not reconstructable. |
 | `messageredirects` | Retry redirects (route retries to a different queue) | **Important** | Configuration that *silently changes retry behavior* if lost — a retry after migration would go to the original, possibly decommissioned, queue. |
@@ -35,8 +35,13 @@ erDiagram
 |---|---|---|
 | 1 Unresolved | 1 Unresolved | never (`@expires` absent) |
 | 2 Resolved | 2 Resolved | `LastModified + ErrorRetentionPeriod` |
-| 3 RetryIssued | **1 Unresolved** | never |
+| 3 RetryIssued | **1 Unresolved**¹ | never |
 | 4 Archived | 4 Archived | `LastModified + ErrorRetentionPeriod` |
+
+¹ Evaluated against the *original* status, before normalization: a RetryIssued document whose
+`LastModified + ErrorRetentionPeriod` is already in the past at import time is dropped entirely
+(same as Resolved/Archived), not imported as an eternal Unresolved. Import's `--error-retention`
+retention check always runs against the pre-normalization status.
 
 RetryIssued means "a retry was dispatched and no outcome has arrived yet." The retry staging
 documents don't migrate, so the outcome can never arrive on the new instance — the message
