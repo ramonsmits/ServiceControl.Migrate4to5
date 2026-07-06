@@ -56,12 +56,12 @@ public class ExportCommandTests
         }
     }
 
-    int Run(out string output, string? retention = null)
+    int Run(out string output, string? retention = null, DateTime? utcNow = null)
     {
         string[] args = ["export", "--db-path", "ignored-by-test-ctor", "--out", outDir];
         if (retention != null) args = [.. args, "--error-retention", retention];
         var writer = new StringWriter();
-        var exit = ExportCommand.Run(CliArgs.Parse(args), writer, new SourceDatabase(store));
+        var exit = ExportCommand.Run(CliArgs.Parse(args), writer, new SourceDatabase(store), utcNow);
         output = writer.ToString();
         return exit;
     }
@@ -91,10 +91,15 @@ public class ExportCommandTests
     [Test]
     public void Retention_filter_skips_old_resolved_but_keeps_unresolved()
     {
+        // RavenDB always stamps Raven-Last-Modified/Last-Modified with the real write time on
+        // Put (Raven.Database.Actions.DocumentActions strips any client-supplied value before
+        // storing), so the "2026-01-01" passed here is discarded — the documents' real
+        // last-modified is "now". Retention is exercised by advancing the "as of" clock instead
+        // of trying to backdate the documents.
         PutFailedMessage("old-archived", 4, "2026-01-01T00:00:00.0000000Z");
         PutFailedMessage("old-unresolved", 1, "2026-01-01T00:00:00.0000000Z");
 
-        Run(out _, retention: "15.00:00:00");
+        Run(out _, retention: "15.00:00:00", utcNow: DateTime.UtcNow.AddDays(20));
 
         var paths = new DumpPaths(outDir);
         var ids = Jsonl.Read(paths, "FailedMessages").Select(l => l.Id).ToList();

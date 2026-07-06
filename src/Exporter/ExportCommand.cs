@@ -12,9 +12,10 @@ public static class ExportCommand
     public static int Run(CliArgs args, TextWriter output) =>
         Run(args, output, new SourceDatabase(args.Required("db-path")));
 
-    public static int Run(CliArgs args, TextWriter output, SourceDatabase source)
+    public static int Run(CliArgs args, TextWriter output, SourceDatabase source, DateTime? utcNow = null)
     {
         using var _ = source;
+        var now = utcNow ?? DateTime.UtcNow;
         var paths = new DumpPaths(args.Required("out"));
         var bodyStore = new BodyStore(paths);
         TimeSpan? retention = args.Optional("error-retention") is { } r ? TimeSpan.Parse(r) : null;
@@ -24,7 +25,7 @@ public static class ExportCommand
         {
             ToolVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "dev",
             SourceDbPath = args.Optional("db-path") ?? "",
-            ExportedAtUtc = DateTime.UtcNow,
+            ExportedAtUtc = now,
         };
 
         foreach (var spec in Collections.All.Where(s => selected.Contains(s.Name)))
@@ -34,7 +35,7 @@ public static class ExportCommand
             {
                 foreach (var (id, metadata, document) in source.Stream(spec))
                 {
-                    if (spec.Name == "FailedMessages" && IsPastRetention(document, metadata, retention))
+                    if (spec.Name == "FailedMessages" && IsPastRetention(document, metadata, retention, now))
                     {
                         stats.SkippedPastRetention++;
                         continue;
@@ -72,14 +73,14 @@ public static class ExportCommand
         return 0;
     }
 
-    static bool IsPastRetention(JObject document, JObject metadata, TimeSpan? retention)
+    static bool IsPastRetention(JObject document, JObject metadata, TimeSpan? retention, DateTime utcNow)
     {
         if (retention is null || document.Value<int>("Status") is not (2 or 3 or 4))
         {
             return false;
         }
         var raw = metadata.Value<string>("Raven-Last-Modified") ?? metadata.Value<string>("Last-Modified");
-        var lastModified = raw is null ? DateTime.UtcNow : DumpJson.ParseUtc(raw);
-        return lastModified + retention.Value <= DateTime.UtcNow;
+        var lastModified = raw is null ? utcNow : DumpJson.ParseUtc(raw);
+        return lastModified + retention.Value <= utcNow;
     }
 }
