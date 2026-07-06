@@ -28,8 +28,19 @@ public class Manifest
 
     static readonly JsonSerializerSettings jsonSettings = new() { DateTimeZoneHandling = DateTimeZoneHandling.Utc, Formatting = Formatting.Indented };
 
-    public void Save(DumpPaths paths) =>
-        File.WriteAllText(paths.ManifestPath, JsonConvert.SerializeObject(this, jsonSettings));
+    public void Save(DumpPaths paths)
+    {
+        // Write via temp + move so a crash mid-write never leaves a truncated/corrupt manifest
+        // under its final name — the file an operator or importer sees is either the previous
+        // complete one or the new complete one, never a partial write.
+        var tmp = paths.ManifestPath + ".tmp";
+        File.WriteAllText(tmp, JsonConvert.SerializeObject(this, jsonSettings));
+        if (File.Exists(paths.ManifestPath))
+        {
+            File.Delete(paths.ManifestPath);
+        }
+        File.Move(tmp, paths.ManifestPath);
+    }
 
     public static Manifest Load(DumpPaths paths)
     {
