@@ -8,6 +8,8 @@ env:
 jobs:
   linux:
     runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Amsterdam
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
