@@ -78,7 +78,13 @@ public static class FailedMessageTransformer
         var bodyId = latest["Headers"]?.Value<string>("NServiceBus.MessageId") ?? latest.Value<string>("MessageId");
         if (bodyId is null || !line.Bodies.TryGetValue(bodyId, out var bodyRef))
         {
-            result.Warnings.Add($"{line.Id}: no body in dump (bodyId={bodyId ?? "?"}) — importing without attachment");
+            // 4.x stores nothing at all for a genuinely empty body — ContentLength absent or 0
+            // means there was never a body to capture, not a body that failed to migrate.
+            var contentLength = latest["MessageMetadata"]?.Value<long?>("ContentLength") ?? 0;
+            if (contentLength > 0)
+            {
+                result.Warnings.Add($"{line.Id}: no body in dump (bodyId={bodyId ?? "?"}) — importing without attachment");
+            }
             return result;
         }
 

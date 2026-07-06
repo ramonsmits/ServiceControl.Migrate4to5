@@ -114,6 +114,22 @@ public class FailedMessageTransformerTests
     }
 
     [Test]
+    public void Empty_body_message_imports_without_warning()
+    {
+        // 4.x stores nothing at all for a genuinely empty body (ContentLength 0/absent) — this
+        // is not a body that failed to migrate, so it must not be reported as a warning.
+        var line = FailedMessageFixture.Line();
+        var latest = (JObject)((JArray)line.Document["ProcessingAttempts"]!)[1];
+        latest["Body"] = null;
+        ((JObject)latest["MessageMetadata"]!)["ContentLength"] = 0;
+
+        var t = FailedMessageTransformer.Transform(line, Retention, Now, _ => BodyBytes);
+
+        Assert.That(t.Warnings, Is.Empty);
+        Assert.That(t.Body, Is.Null);
+    }
+
+    [Test]
     public void Expires_math_is_timezone_independent()
     {
         // Raven-Last-Modified fixture value is 2026-06-20T10:00:00.0000000Z; retention 30d
