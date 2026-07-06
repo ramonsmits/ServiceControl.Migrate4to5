@@ -1,7 +1,6 @@
 namespace ServiceControl.Migrate4to5.Importer;
 
 using System;
-using System.Globalization;
 using Newtonsoft.Json.Linq;
 using ServiceControl.Migrate4to5.DumpFormat;
 
@@ -44,6 +43,5 @@ public static class DocumentTransformer
     /// must never be used for these — it converts via the host timezone (Kind=Local),
     /// which misorders instants across DST transitions.
     /// </summary>
-    public static DateTime ParseUtc(string value) =>
-        DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).UtcDateTime;
+    public static DateTime ParseUtc(string value) => DumpJson.ParseUtc(value);
 }

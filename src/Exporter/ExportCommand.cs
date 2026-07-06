@@ -1,0 +1,85 @@
+namespace ServiceControl.Migrate4to5.Exporter;
+
+using System;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using Newtonsoft.Json.Linq;
+using ServiceControl.Migrate4to5.DumpFormat;
+
+public static class ExportCommand
+{
+    public static int Run(CliArgs args, TextWriter output) =>
+        Run(args, output, new SourceDatabase(args.Required("db-path")));
+
+    public static int Run(CliArgs args, TextWriter output, SourceDatabase source)
+    {
+        using var _ = source;
+        var paths = new DumpPaths(args.Required("out"));
+        var bodyStore = new BodyStore(paths);
+        TimeSpan? retention = args.Optional("error-retention") is { } r ? TimeSpan.Parse(r) : null;
+        var selected = args.Optional("collections")?.Split(',') ?? Collections.All.Select(s => s.Name).ToArray();
+
+        var manifest = new Manifest
+        {
+            ToolVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "dev",
+            SourceDbPath = args.Optional("db-path") ?? "",
+            ExportedAtUtc = DateTime.UtcNow,
+        };
+
+        foreach (var spec in Collections.All.Where(s => selected.Contains(s.Name)))
+        {
+            var stats = new CollectionStats { Name = spec.Name };
+            using (var writer = new JsonlWriter(paths, spec.Name))
+            {
+                foreach (var (id, metadata, document) in source.Stream(spec))
+                {
+                    if (spec.Name == "FailedMessages" && IsPastRetention(document, metadata, retention))
+                    {
+                        stats.SkippedPastRetention++;
+                        continue;
+                    }
+
+                    var line = new DumpLine { Id = id, Metadata = metadata, Document = document };
+                    if (spec.Name == "FailedMessages")
+                    {
+                        foreach (var attempt in (document["ProcessingAttempts"] as JArray ?? []).OfType<JObject>())
+                        {
+                            var bodyId = attempt["Headers"]?.Value<string>("NServiceBus.MessageId") ?? attempt.Value<string>("MessageId");
+                            if (bodyId is null || line.Bodies.ContainsKey(bodyId))
+                            {
+                                continue;
+                            }
+                            if (BodyResolver.Resolve(attempt, source) is { } body)
+                            {
+                                var bodyRef = bodyStore.Store(body.Content, body.ContentType);
+                                line.Bodies[bodyId] = bodyRef;
+                                manifest.BodyCount++;
+                                manifest.BodyTotalBytes += bodyRef.ContentLength;
+                            }
+                        }
+                    }
+                    writer.Write(line);
+                }
+                stats.ExportedCount = writer.Count;
+            }
+            manifest.Collections.Add(stats);
+            output.WriteLine($"{spec.Name,-22} exported: {stats.ExportedCount,7}  skipped (retention): {stats.SkippedPastRetention}");
+        }
+
+        manifest.Save(paths); // written LAST — its presence marks the dump complete
+        output.WriteLine($"Export finished: {manifest.BodyCount} bodies, {manifest.BodyTotalBytes / (1024 * 1024)} MB of body data.");
+        return 0;
+    }
+
+    static bool IsPastRetention(JObject document, JObject metadata, TimeSpan? retention)
+    {
+        if (retention is null || document.Value<int>("Status") is not (2 or 3 or 4))
+        {
+            return false;
+        }
+        var raw = metadata.Value<string>("Raven-Last-Modified") ?? metadata.Value<string>("Last-Modified");
+        var lastModified = raw is null ? DateTime.UtcNow : DumpJson.ParseUtc(raw);
+        return lastModified + retention.Value <= DateTime.UtcNow;
+    }
+}
