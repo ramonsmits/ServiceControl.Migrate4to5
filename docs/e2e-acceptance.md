@@ -21,13 +21,12 @@ step whose expected observation doesn't hold — treat that as a release blocker
       at least one has a **binary body** (e.g. a non-text/non-XML/non-JSON content type — confirms
       binary bodies migrate as an attachment with the original content type, no full-text
       re-creation).
-- [ ] **Archive** a handful of the seeded messages (via ServicePulse or `POST api/errors/{failedMessageId}/archive`)
+- [ ] **Archive** a handful of the seeded messages (via ServicePulse or `POST api/errors/{messageId}/archive`)
       so both `Unresolved` and `Archived` status values are represented.
 - [ ] Add a **comment to a failure group** in ServicePulse (Recoverability → group → comment), or:
 
   ```bash
-  curl -X POST http://localhost:33333/api/recoverability/groups/<groupId>/comment \
-    -H "Content-Type: application/json" -d "\"Investigated, waiting on partner team\""
+  curl -X POST "http://localhost:33333/api/recoverability/groups/<groupId>/comment?comment=Investigated%2C%20waiting%20on%20partner%20team"
   ```
 
 - [ ] Create a **message redirect** (retry redirect from one queue to another) in ServicePulse
@@ -129,7 +128,7 @@ exists and its `BodyCount`/`BodyTotalBytes` are non-zero.
       and retry it, either in ServicePulse or:
 
   ```bash
-  curl -X POST http://localhost:44444/api/errors/<failedMessageId>/retry
+  curl -X POST http://localhost:44444/api/errors/<messageId>/retry
   ```
 
   **Expected observation:** the endpoint receiving the retried message processes it successfully

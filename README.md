@@ -4,8 +4,6 @@ Data migration utility for [ServiceControl](https://github.com/Particular/Servic
 
 The official [4 → 5 upgrade procedure](https://docs.particular.net/servicecontrol/upgrades/4to5/) includes no data migration for the error instance — customers are told to drain (retry/archive) all failed messages and then run a destructive forced upgrade. This tool preserves that data instead: unresolved and archived failed messages (including bodies), group comments, retry history, message redirects, notification settings, custom checks, and known endpoints.
 
-> ⚠️ Early stage — design phase. See the [design spec](docs/superpowers/specs/2026-07-03-sc4to5-data-migration-design.md).
-
 ## How it works
 
 ```mermaid
@@ -119,7 +117,7 @@ Options:
 
 The dump is roughly the size of the exported data from the source database — attachments (message bodies) dominate, since `FailedMessages` metadata is small per document. Content-addressed body storage (`bodies/<sha256>`) deduplicates identical bodies across processing attempts and across messages (e.g. many failures of the same message, or many instances of the same recurring error), so the dump is often smaller than a naive per-attempt export would suggest.
 
-For the RavenDB 5 target, follow the [official RavenDB upgrade sizing guidance](https://docs.particular.net/servicecontrol/upgrades/4to5/) and provision roughly **20% more disk than the source database** to comfortably hold the imported data plus indexes during the migration window.
+The official [ServiceControl 4 to 5 upgrade guide](https://docs.particular.net/servicecontrol/upgrades/4to5/) recommends estimating roughly **20% more disk space** than the existing RavenDB 3.5 database for the migration window.
 
 ## `_UpgradeBackup` recovery
 
@@ -127,4 +125,4 @@ The official destructive Force Upgrade procedure renames the old RavenDB 3.5 dat
 
 ## Project status
 
-Design complete; `export`, `import`, and `verify` are implemented. The exporter's test suite (`net48`, RavenDB 3.5) runs on Windows CI; the importer's tests run cross-platform.
+Design complete; `export`, `import`, and `verify` are implemented. The exporter's test suite (`net48`, Esent) only runs on Windows; the importer's and dump-format tests run cross-platform.
