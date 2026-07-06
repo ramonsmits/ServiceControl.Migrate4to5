@@ -33,7 +33,12 @@ public static class ImportCommand
 
         output.WriteLine($"Importing dump from {paths.Root} (exported {manifest.ExportedAtUtc:u} from {manifest.SourceDbPath})");
 
-        foreach (var spec in Collections.All)
+        // Only import collections the manifest actually recorded — a stray .jsonl file left
+        // over from an unrelated or partial export must not be picked up just because it's
+        // physically present on disk.
+        var manifestCollections = new HashSet<string>(manifest.Collections.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var spec in Collections.All.Where(s => manifestCollections.Contains(s.Name)))
         {
             long imported = 0, skippedExisting = 0, skippedRetention = 0, warnings = 0;
             foreach (var chunk in Jsonl.Read(paths, spec.Name).Chunk(batchSize))

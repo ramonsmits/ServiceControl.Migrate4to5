@@ -55,4 +55,31 @@ public class ImportCommandTests
         File.Delete(Path.Combine(dumpRoot, "manifest.json"));
         Assert.That(Run(out _), Is.Not.Zero);
     }
+
+    [Test]
+    public void Jsonl_file_not_listed_in_manifest_is_ignored()
+    {
+        // A .jsonl file can end up on disk without being part of the manifest (leftover from a
+        // different export, hand-edited, etc). Import must be driven by the manifest, not by
+        // what files happen to exist under collections/.
+        var paths = new DumpPaths(dumpRoot);
+        const string strayId = "KnownEndpoints/22222222-2222-2222-2222-222222222222";
+        using (var w = new JsonlWriter(paths, "KnownEndpoints"))
+        {
+            w.Write(new DumpLine
+            {
+                Id = strayId,
+                Metadata = DumpJson.Parse("""{"Raven-Entity-Name":"KnownEndpoints"}"""),
+                Document = DumpJson.Parse("""{"EndpointDetails":{"Name":"Sales"},"HasTemporaryId":false}"""),
+            });
+        }
+
+        var exit = Run(out var output);
+
+        Assert.That(exit, Is.Zero);
+        Assert.That(output, Does.Not.Contain("KnownEndpoints"));
+
+        using var target = new RavenTarget(RavenTestServer.ServerUrl, database, null, null);
+        Assert.That(target.LoadRaw(strayId), Is.Null);
+    }
 }

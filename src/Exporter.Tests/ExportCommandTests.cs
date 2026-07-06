@@ -127,4 +127,18 @@ public class ExportCommandTests
         Assert.That(output, Does.Contain("Valid:"));
         Assert.That(Directory.Exists(outDir), Is.False, "nothing should have been opened/created before validation");
     }
+
+    [Test]
+    public void Non_empty_out_dir_fails_fast()
+    {
+        Directory.CreateDirectory(outDir);
+        File.WriteAllText(Path.Combine(outDir, "leftover.txt"), "stale data from a previous run");
+
+        var exit = Run(out var output);
+
+        Assert.That(exit, Is.EqualTo(2));
+        Assert.That(output, Does.Contain("ERROR: output directory"));
+        Assert.That(output, Does.Contain("is not empty"));
+        Assert.That(File.Exists(Path.Combine(outDir, "manifest.json")), Is.False);
+    }
 }

@@ -34,7 +34,14 @@ public static class ExportCommand
             }
         }
 
-        var paths = new DumpPaths(args.Required("out"));
+        var outPath = args.Required("out");
+        if (Directory.Exists(outPath) && Directory.EnumerateFileSystemEntries(outPath).Any())
+        {
+            output.WriteLine($"ERROR: output directory '{outPath}' is not empty");
+            return 2;
+        }
+
+        var paths = new DumpPaths(outPath);
         var bodyStore = new BodyStore(paths);
 
         var manifest = new Manifest
