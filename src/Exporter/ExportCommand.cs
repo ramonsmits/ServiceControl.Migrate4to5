@@ -16,10 +16,22 @@ public static class ExportCommand
     {
         using var _ = source;
         var now = utcNow ?? DateTime.UtcNow;
+        TimeSpan? retention = args.Optional("error-retention") is { } r ? TimeSpan.Parse(r) : null;
+        var requested = args.Optional("collections")?.Split(',').Select(n => n.Trim()).ToArray();
+        var selected = requested ?? Collections.All.Select(s => s.Name).ToArray();
+
+        if (requested is not null)
+        {
+            var unknown = requested.FirstOrDefault(name => Collections.All.All(s => !string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)));
+            if (unknown is not null)
+            {
+                output.WriteLine($"ERROR: unknown collection '{unknown}'. Valid: {string.Join(", ", Collections.All.Select(s => s.Name))}");
+                return 2;
+            }
+        }
+
         var paths = new DumpPaths(args.Required("out"));
         var bodyStore = new BodyStore(paths);
-        TimeSpan? retention = args.Optional("error-retention") is { } r ? TimeSpan.Parse(r) : null;
-        var selected = args.Optional("collections")?.Split(',') ?? Collections.All.Select(s => s.Name).ToArray();
 
         var manifest = new Manifest
         {
@@ -28,7 +40,7 @@ public static class ExportCommand
             ExportedAtUtc = now,
         };
 
-        foreach (var spec in Collections.All.Where(s => selected.Contains(s.Name)))
+        foreach (var spec in Collections.All.Where(s => selected.Any(name => string.Equals(name, s.Name, StringComparison.OrdinalIgnoreCase))))
         {
             var stats = new CollectionStats { Name = spec.Name };
             using (var writer = new JsonlWriter(paths, spec.Name))

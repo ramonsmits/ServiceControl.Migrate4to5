@@ -56,10 +56,11 @@ public class ExportCommandTests
         }
     }
 
-    int Run(out string output, string? retention = null, DateTime? utcNow = null)
+    int Run(out string output, string? retention = null, DateTime? utcNow = null, string? collections = null)
     {
         string[] args = ["export", "--db-path", "ignored-by-test-ctor", "--out", outDir];
         if (retention != null) args = [.. args, "--error-retention", retention];
+        if (collections != null) args = [.. args, "--collections", collections];
         var writer = new StringWriter();
         var exit = ExportCommand.Run(CliArgs.Parse(args), writer, new SourceDatabase(store), utcNow);
         output = writer.ToString();
@@ -113,5 +114,16 @@ public class ExportCommandTests
     {
         // Simulated by just not running export: a dump dir without manifest must not load
         Assert.Throws<InvalidDumpException>(() => Manifest.Load(new DumpPaths(outDir)));
+    }
+
+    [Test]
+    public void Unknown_collection_name_fails_fast()
+    {
+        var exit = Run(out var output, collections: "FailedMessages, NotARealCollection ");
+
+        Assert.That(exit, Is.EqualTo(2));
+        Assert.That(output, Does.Contain("ERROR: unknown collection 'NotARealCollection'"));
+        Assert.That(output, Does.Contain("Valid:"));
+        Assert.That(Directory.Exists(outDir), Is.False, "nothing should have been opened/created before validation");
     }
 }
