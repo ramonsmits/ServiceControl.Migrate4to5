@@ -9,6 +9,10 @@ using ServiceControl.Migrate4to5.DumpFormat;
 
 public static class ExportCommand
 {
+    // Full detail and rationale for each of these lives in COLLECTIONS.md.
+    const string NotMigratedCollections =
+        "EventLogItems, RetryBatches, FailedMessageRetries, FailedMessageEdit, Archive/Unarchive operations, FailedErrorImports, ProcessedMessages, SagaSnapshots, Subscriptions, ReclassifyErrorSettings";
+
     public static int Run(CliArgs args, TextWriter output) =>
         Run(args, output, new SourceDatabase(args.Required("db-path")));
 
@@ -79,6 +83,8 @@ public static class ExportCommand
             manifest.Collections.Add(stats);
             output.WriteLine($"{spec.Name,-22} exported: {stats.ExportedCount,7}  skipped (retention): {stats.SkippedPastRetention}");
         }
+
+        output.WriteLine($"Not migrated (by design, see COLLECTIONS.md): {NotMigratedCollections}");
 
         manifest.Save(paths); // written LAST — its presence marks the dump complete
         output.WriteLine($"Export finished: {manifest.BodyCount} bodies, {manifest.BodyTotalBytes / (1024 * 1024)} MB of body data.");

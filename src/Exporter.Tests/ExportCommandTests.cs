@@ -73,8 +73,9 @@ public class ExportCommandTests
         PutFailedMessage("aaa", 1, "2026-07-01T00:00:00.0000000Z", embeddedBody: "<inline/>");
         PutFailedMessage("bbb", 1, "2026-07-01T00:00:00.0000000Z", attachmentBodyId: "m-bbb");
 
-        var exit = Run(out _);
+        var exit = Run(out var output);
         Assert.That(exit, Is.Zero);
+        Assert.That(output, Does.Contain("Not migrated (by design"));
 
         var paths = new DumpPaths(outDir);
         var manifest = Manifest.Load(paths);
