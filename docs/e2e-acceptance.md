@@ -31,10 +31,30 @@ step whose expected observation doesn't hold — treat that as a release blocker
 
 - [ ] Create a **message redirect** (retry redirect from one queue to another) in ServicePulse
       (Recoverability → Redirects), or via the redirects API.
+- [ ] Enable a **custom check** on one endpoint and make it **fail** (any custom check that
+      reports unhealthy — e.g. a disk-space or connectivity check configured to trip), so
+      `CustomChecks` has at least one non-passing entry.
+- [ ] **Toggle `Monitored` off** for one endpoint in ServicePulse (Monitoring → endpoint →
+      disable monitoring), so `KnownEndpoints` has at least one endpoint with the flag
+      explicitly unset.
+- [ ] Perform **one failure-group retry** (Recoverability → group → "Retry all" for a whole
+      failure group, not an individual message), and let it complete, so
+      `RetryOperations/History` has at least one completed group-retry entry:
+
+  ```bash
+  curl -X POST "http://localhost:33333/api/recoverability/groups/<classifier>/<groupId>/errors/retry"
+  ```
+
+- [ ] **Configure email notification settings** in ServicePulse (Configuration → Failed message
+      notifications) — enable notifications and set a from/to address, so
+      `NotificationsSettings/All` has non-default, human-entered values.
 
 **Expected observation:** `GET http://localhost:33333/api/errors` returns >=20 messages spanning
 >=3 endpoints and both `Unresolved` and `Archived` statuses; `GET http://localhost:33333/api/redirects`
-returns the redirect just created; the failure group shows the comment in ServicePulse.
+returns the redirect just created; the failure group shows the comment in ServicePulse; the custom
+check shows failed in the Custom Checks screen; the endpoint's `Monitored` toggle shows disabled;
+Recoverability → History shows the completed group retry; the notification settings screen shows
+the configured from/to address.
 
 ## 2. Stop the instance and export
 
@@ -123,6 +143,45 @@ exists and its `BodyCount`/`BodyTotalBytes` are non-zero.
   ```
 
   **Expected observation:** the redirect created in step 1 appears with the same from/to queue names.
+
+- [ ] **Custom check visible with failed state.** Open the Custom Checks screen in ServicePulse, or:
+
+  ```bash
+  curl http://localhost:44444/api/customchecks
+  ```
+
+  **Expected observation:** the custom check seeded in step 1 is present and shows a failed
+  (non-passing) state, matching SC4 before it was stopped.
+
+- [ ] **`Monitored` toggle preserved.** Open Monitoring in ServicePulse for the endpoint toggled
+      off in step 1, or:
+
+  ```bash
+  curl http://localhost:44444/api/monitoring/endpoints
+  ```
+
+  **Expected observation:** the endpoint from step 1 still shows `Monitored` disabled — the
+  toggle wasn't reset to its (monitored) default by the migration.
+
+- [ ] **Recoverability → History shows the group retry.** Open Recoverability → History in
+      ServicePulse, or:
+
+  ```bash
+  curl http://localhost:44444/api/recoverability/history
+  ```
+
+  **Expected observation:** the completed group retry performed in step 1 appears in the
+  history list with the same group/classifier and completion time.
+
+- [ ] **Notification settings intact.** Open Configuration → Failed message notifications in
+      ServicePulse, or:
+
+  ```bash
+  curl http://localhost:44444/api/configuration/emailnotifications
+  ```
+
+  **Expected observation:** the from/to address and enabled state configured in step 1 are
+  unchanged.
 
 - [ ] **Retry of a migrated message succeeds end-to-end.** Pick one migrated `Unresolved` message
       and retry it, either in ServicePulse or:
