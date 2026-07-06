@@ -1,5 +1,6 @@
 namespace ServiceControl.Migrate4to5.Exporter.Tests;
 
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -66,5 +67,13 @@ public class SourceDatabaseTests
         Assert.That(att!.Value.Content, Is.EqualTo(bytes));
         Assert.That(att.Value.ContentType, Is.EqualTo("application/json"));
         Assert.That(source.GetLegacyAttachment("nope"), Is.Null);
+    }
+
+    [Test]
+    public void Missing_db_path_throws_before_touching_the_filesystem()
+    {
+        var missing = Path.Combine(Path.GetTempPath(), "sc-migrate-no-such-dir-" + Guid.NewGuid().ToString("N"));
+        Assert.Throws<InvalidOperationException>(() => new SourceDatabase(missing));
+        Assert.That(Directory.Exists(missing), Is.False, "guard must fire before RavenDB can auto-create the directory");
     }
 }

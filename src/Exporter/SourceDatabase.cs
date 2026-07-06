@@ -13,17 +13,23 @@ public sealed class SourceDatabase : IDisposable
     readonly EmbeddableDocumentStore store;
 
     public SourceDatabase(string dbPath)
-        : this(new EmbeddableDocumentStore
-        {
-            DataDirectory = dbPath,
-            UseEmbeddedHttpServer = false,
-            EnlistInDistributedTransactions = false,
-        })
+        : this(CreateStore(dbPath))
+    {
+    }
+
+    static EmbeddableDocumentStore CreateStore(string dbPath)
     {
         if (!Directory.Exists(dbPath))
         {
             throw new InvalidOperationException($"Database path not found: {dbPath}");
         }
+
+        return new EmbeddableDocumentStore
+        {
+            DataDirectory = dbPath,
+            UseEmbeddedHttpServer = false,
+            EnlistInDistributedTransactions = false,
+        };
     }
 
     internal SourceDatabase(EmbeddableDocumentStore store)
